@@ -1,11 +1,20 @@
 use chrono::Local;
 use rand::random_range;
 use serde_json::Value as JsonValue;
-use std::env;
+use std::{env, iter::Map};
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
 use toml::{Table, Value};
+
+#[allow(dead_code)]
+#[derive(Debug)]
+struct Config {
+    api_key: String,
+    city: String,
+    url: String,
+    phrases: Map<String, Vec<String>>,
+}
 
 #[tokio::main]
 async fn main() {
@@ -24,7 +33,8 @@ async fn generate_makie() {
         19..24 | 0..6 => "night",
         _ => "unknown",
     });
-    println!("{}", time);
+    let weekday_code = now.format("%u").to_string().parse::<u8>().expect("Failed");
+    // println!("{}", time);
     // 读取配置文件
     // 包括api_key, city, url和所有语料库phrases
     let mut file = File::open("src/config.toml").expect("Failed to open file");
@@ -51,57 +61,65 @@ async fn generate_makie() {
     // 日记位置
     let diary_path = PathBuf::from(env::var("DNDIARY").unwrap()).join("diary");
     let weather = get_weather(&url).await.unwrap();
+    let weather_code = match &weather {
+        w if w.contains("晴") => "clear",
+        w if w.contains("云") => "cloudy",
+        w if w.contains("阴") => "overcast",
+        w if w.contains("雨") => "rainy",
+        w if w.contains("雪") => "snowy",
+        _ => "",
+    };
     println!("六百六十六: {}", weather);
     println!("含有雨: {:?}", weather.contains("雨"));
     println!("日期检验文件位置: {}", dailyfile.display());
     println!("存在: {}", dailyfile.exists());
     println!("日记位置: {}", diary_path.display());
-    println!("phrase: {}", get_random_phrase(phrases, "morning", "clear"));
+    println!("phrase: {}", get_random_phrase_of_weather(phrases, "morning", "clear"));
 
     println!("================== 下面是输出喵 ==================");
     println!(
         "今天是 {} {}",
         now.format("%Y年%m月%d日"),
-        match format!("{}", now.format("%A")).as_str() {
-            "Monday" => "星期一...",
-            "Tuesday" => "星期二",
-            "Wednesday" => "星期三",
-            "Thursday" => "星期四",
-            "Friday" => "星期五",
-            "Saturday" => "星期六!",
-            "Sunday" => "星期日~",
+        match weekday_code {
+            1 => "星期一...",
+            2 => "星期二",
+            3 => "星期三",
+            4 => "星期四",
+            5 => "星期五",
+            6 => "星期六!",
+            7 => "星期日~",
             _ => "",
         }
     );
     println!(
         "今日天气: {}{}",
         weather,
-        match &weather {
-            w if w.contains("晴") => {
+        match weather_code {
+            "clear" => {
                 if time == "night" { "🌙" } else { "☀️" }
             }
-            w if w.contains("云") => "⛅",
-            w if w.contains("阴") => "☁️",
-            w if w.contains("雨") => "🌧",
-            w if w.contains("雪") => "🌨",
+            "cloudy" => "⛅",
+            "overcast" => "☁️",
+            "rainy" => "🌧",
+            "snowy" => "🌨",
             _ => "",
         }
     );
     println!(
         "{}",
-        get_random_phrase(
+        get_random_phrase_of_weather(
             phrases,
             &time,
-            match &weather {
-                w if w.contains("晴") => "clear",
-                w if w.contains("云") => "cloudy",
-                w if w.contains("阴") => "overcast",
-                w if w.contains("雨") => "rainy",
-                w if w.contains("雪") => "snowy",
-                _ => "unknown",
-            }
+            weather_code
         )
     );
+    if rand::random() {
+        // 周期问候
+        println!("{}", get_random_phrase(phrases, "weekdays"));
+    } else {
+        // 随机问候
+        println!("{}", get_random_phrase(phrases, "roasts"));
+    }
 }
 
 /// 获取天气信息
@@ -124,23 +142,38 @@ async fn get_weather(url: &str) -> Result<String, Box<dyn std::error::Error>> {
 /// 获取随机语料库
 ///
 /// 参数:
+/// - `arr`: 语料库
+///
+/// 返回:
+/// - `String`: 随机语句
+fn get_random_phrase(phrases: &Value, key: &str) -> String {
+    let arr = 
+        phrases
+            .get(key)
+            .unwrap()
+            .as_array()
+            .unwrap();
+    String::from(
+        arr
+            .get(random_range(..arr.len()))
+            .unwrap()
+            .as_str()
+            .unwrap()
+        
+    )
+}
+
+/// 解析天气&时段的特定版本
+///
+/// 参数:
 /// - `phrases`: 语料库
 /// - `time`: 时间段: [morning, noon, night]
 /// - `weather`: 天气: [clear, cloudy, overcast, rainy, snowy]
 ///
 /// 返回:
 /// - `String`: 随机语句
-fn get_random_phrase(phrases: &Value, time: &str, weather: &str) -> String {
-    let words = phrases
-        .get(time.to_owned() + "_" + weather)
-        .unwrap()
-        .as_array()
-        .unwrap();
-    String::from(
-        words
-            .get(random_range(..words.len()))
-            .unwrap()
-            .as_str()
-            .unwrap(),
-    )
+fn get_random_phrase_of_weather(phrases: &Value, time: &str, weather: &str) -> String {
+    let key = time.to_owned() + "_" + weather;
+    get_random_phrase(phrases, &key)
 }
+
