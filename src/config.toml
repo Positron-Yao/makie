@@ -1,3 +1,5 @@
+# config.toml文件应放在$HOME/.config/makie/config.toml
+
 api_key = "3762d7ab3be74be9bb530507251506"
 city = "wuhan"
 url = "http://api.weatherapi.com/v1/current.json?key={0}&q={1}&aqi=no&lang=zh"
