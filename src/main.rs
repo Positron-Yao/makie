@@ -80,6 +80,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     _ => "",
                 }
             );
+
             // 输出天气
             println!(
                 "今日天气: {}{}",
@@ -95,11 +96,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     _ => "",
                 }
             );
+
             // 天气问候语
             println!(
                 "{}",
                 get_random_phrase_of_weather(&phrases, &time, weather_code)?
             );
+
             // 星期/随机问候语
             if rand::random() {
                 // 周期问候
@@ -109,22 +112,23 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 println!("{}", get_random_phrase(&phrases, "roasts")?);
             }
         }
+        // TODO: 解析todo文件
+        // byd不用glow做了架绷
+        // 还是几把得自己弄
+        let todo_content = fs::read_to_string(&todo_file)?;
+        let re_todo = Regex::new(r"\[(TODO|ALRT)\].*")?;
+        let mut got_todo = Vec::new();
+        for cap in re_todo.captures_iter(&todo_content) {
+            got_todo.push(String::from("  • "));
+            got_todo.push(cap[0].to_string());
+            got_todo.push(String::from("\n"));
+        }
+        println!("{}", get_random_phrase(&phrases, "todo")?.replace("%d", &(got_todo.len() / 3).to_string()));
+        println!("\n{}", got_todo.join(""));
+
         // 检验日记文件是否存在
         if !diary_path.exists() {
             println!("{}", get_random_phrase(&phrases, "dn")?);
-        }
-        // TODO: 解析todo文件
-        let todo_content = fs::read_to_string(todo_file)?;
-        let re = Regex::new(r"\[ALRT\].*")?;
-        let mut got = Vec::new();
-        for cap in re.captures_iter(&todo_content) {
-            got.push(cap[0].to_string());
-        }
-        if !got.is_empty() {
-            println!("{}", get_random_phrase(&phrases, "p_alert")?.replace("%d", &got.len().to_string()));
-            for g in got {
-                println!("{}\n", g);
-            }
         }
     } else {
         // 有命令行参数时
@@ -142,7 +146,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 s if s.success() => println!("{}", get_random_phrase(&phrases, "cleaned")?),
                 _ => println!("{}", get_random_phrase(&phrases, "nothing_to_clean")?),
             }
+        } else {
+            // ...なに？
+            println!("{}", get_random_phrase(&phrases, "nani")?);
         }
     }
+
     Ok(())
 }
