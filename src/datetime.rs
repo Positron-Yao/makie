@@ -54,4 +54,3 @@ pub fn get_time_section(now: &Now) -> TimeSection {
         _ => TimeSection::Night,
     }
 }
-

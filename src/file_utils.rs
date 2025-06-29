@@ -1,6 +1,6 @@
-use std::path::PathBuf;
+use crate::{datetime::*, error::*};
 use std::env;
-use crate::{error::*, datetime::*};
+use std::path::PathBuf;
 
 /// 应用程序路径结构
 pub struct AppPaths {
@@ -18,7 +18,7 @@ pub struct AppPaths {
 pub fn build_path(now: &Now) -> Result<AppPaths, AppError> {
     let date = get_date(now);
 
-    Ok( AppPaths {
+    Ok(AppPaths {
         config_path: PathBuf::from(env::var("HOME")?)
             .join(".config")
             .join("makie")
@@ -29,7 +29,6 @@ pub fn build_path(now: &Now) -> Result<AppPaths, AppError> {
         diary_path: PathBuf::from(env::var("DNDIARY")?)
             .join("diary")
             .join(date.clone() + ".md"),
-        todo_path: PathBuf::from(env::var("HOME")?)
-            .join("todo.md"),
+        todo_path: PathBuf::from(env::var("HOME")?).join("todo.md"),
     })
 }

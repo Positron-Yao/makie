@@ -1,7 +1,7 @@
 use std::fs;
 use std::process::{Command, Output};
 
-use crate::{config::*, datetime::*, file_utils::*, phrases::*, weather::*, error::*, display::*};
+use crate::{config::*, datetime::*, display::*, error::*, file_utils::*, phrases::*, weather::*};
 
 /// 主显示函数，包括:
 /// - 今日无记录时，显示:
@@ -15,10 +15,11 @@ pub async fn handle_main_display(
     app_paths: &AppPaths,
     now: &Now,
     config: &Config,
-) -> Result<(), AppError>{
+) -> Result<(), AppError> {
     // 获取语句和url
     let phrases = &config.phrases;
-    let url = &config.url
+    let url = &config
+        .url
         .replace("{0}", &config.api_key)
         .replace("{1}", &config.city);
     if app_paths.daily_file.exists() {
@@ -43,7 +44,7 @@ pub fn handle_command(
     app_paths: &AppPaths,
     args: &[String],
     config: &Config,
-) ->Result<(), AppError> {
+) -> Result<(), AppError> {
     let phrases = &config.phrases;
     // 有命令行参数时
     if args[1] == "clean" {
@@ -54,8 +55,7 @@ pub fn handle_command(
         } = Command::new("sh")
             .arg("-c")
             .arg(format!("rm {}", app_paths.daily_file.display()))
-            .output()
-            ?;
+            .output()?;
         match status {
             s if s.success() => println!("{}", get_random_phrase(phrases, "cleaned")?),
             _ => println!("{}", get_random_phrase(phrases, "nothing_to_clean")?),
@@ -66,4 +66,3 @@ pub fn handle_command(
     }
     Ok(())
 }
-

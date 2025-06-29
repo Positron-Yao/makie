@@ -1,6 +1,6 @@
 use rand::random_range;
 
-use crate::{config::*, datetime::*, weather::*, error::*};
+use crate::{config::*, datetime::*, error::*, weather::*};
 
 /// 获取随机语料库
 ///
@@ -29,6 +29,9 @@ pub fn get_random_phrase_of_weather(
     now: &Now,
     weather: &Weather,
 ) -> Result<String, AppError> {
-    let key = format!("{}_{}", get_time_section(now), weather);
+    let key = match weather {
+        Weather::Unknown => "unknown_weather".to_string(),
+        _ => format!("{}_{}", get_time_section(now), weather),
+    };
     get_random_phrase(phrases, &key)
 }

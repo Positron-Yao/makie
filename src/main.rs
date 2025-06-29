@@ -1,16 +1,15 @@
 mod config;
 mod datetime;
+mod display;
+mod error;
 mod file_utils;
+mod handle;
 mod phrases;
 mod weather;
-mod error;
-mod handle;
-mod display;
 
-use crate::{config::*, datetime::*, file_utils::*, error::*, handle::*};
+use crate::{config::*, datetime::*, error::*, file_utils::*, handle::*};
 
 #[tokio::main]
-#[allow(dead_code)]
 async fn main() -> Result<(), AppError> {
     // 获取当前时间，构建路径，加载配置，命令行参数
     let now: Now = get_time();
@@ -28,4 +27,3 @@ async fn main() -> Result<(), AppError> {
 
     Ok(())
 }
-

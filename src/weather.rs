@@ -1,7 +1,7 @@
 use serde_json::Value as JsonValue;
 use std::fmt::{Display, Formatter};
 
-use crate::{error::*, datetime::*};
+use crate::{datetime::*, error::*};
 
 pub enum Weather {
     Clear,
@@ -9,7 +9,7 @@ pub enum Weather {
     Overcast,
     Rainy,
     Snowy,
-    Unknown
+    Unknown,
 }
 
 impl Display for Weather {
@@ -40,14 +40,17 @@ pub async fn get_weather(url: &str) -> Result<(Weather, String), AppError> {
         .ok_or("Missing text field")?
         .to_string();
 
-    Ok((match &text.as_str() {
-        w if w.contains("晴") => Weather::Clear,
-        w if w.contains("云") => Weather::Cloudy,
-        w if w.contains("阴") => Weather::Overcast,
-        w if w.contains("雨") => Weather::Rainy,
-        w if w.contains("雪") => Weather::Snowy,
-        _ => Weather::Unknown,
-    }, text.to_string()))
+    Ok((
+        match &text.as_str() {
+            w if w.contains("晴") => Weather::Clear,
+            w if w.contains("云") => Weather::Cloudy,
+            w if w.contains("阴") => Weather::Overcast,
+            w if w.contains("雨") => Weather::Rainy,
+            w if w.contains("雪") => Weather::Snowy,
+            _ => Weather::Unknown,
+        },
+        text.to_string(),
+    ))
 }
 
 /// 显示天气信息与emoji
@@ -60,7 +63,7 @@ pub fn display_weather(weather: &Weather, raw_weather: &str, now: &Now) {
                 match get_time_section(now) {
                     TimeSection::Night => "🌙",
                     _ => "☀️",
-                } 
+                }
             }
             Weather::Cloudy => "⛅",
             Weather::Overcast => "☁️",
