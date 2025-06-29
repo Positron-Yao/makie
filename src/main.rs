@@ -1,19 +1,18 @@
 use chrono::Local;
 use rand::random_range;
+use serde::Deserialize;
 use serde_json::Value as JsonValue;
-use std::{env, iter::Map};
-use std::fs::File;
-use std::io::Read;
+use std::collections::HashMap;
+use std::env;
+use std::fs;
 use std::path::PathBuf;
-use toml::{Table, Value};
 
-#[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Deserialize)]
 struct Config {
     api_key: String,
     city: String,
     url: String,
-    phrases: Map<String, Vec<String>>,
+    phrases: HashMap<String, Vec<String>>,
 }
 
 #[tokio::main]
@@ -37,30 +36,23 @@ async fn generate_makie() {
     // println!("{}", time);
     // 读取配置文件
     // 包括api_key, city, url和所有语料库phrases
-    let mut file = File::open("src/config.toml").expect("Failed to open file");
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)
-        .expect("Failed to read file");
-    let config = contents.parse::<Table>().unwrap();
-    let api_key = config.get("api_key").unwrap().as_str().unwrap();
-    let city = config.get("city").unwrap().as_str().unwrap();
-    let url = config
-        .get("url")
-        .unwrap()
-        .as_str()
-        .unwrap()
-        .replace("{0}", api_key)
-        .replace("{1}", city);
-    let phrases = config.get("phrases").unwrap();
-    // .get("morning_clear").unwrap()
-    // .get(0).unwrap();
+    // let mut file = File::open("src/config.toml").expect("Failed to open file");
+    // let mut contents = String::new();
+    // file.read_to_string(&mut contents)
+    //     .expect("Failed to read file");
+    // let config = contents.parse::<Table>().unwrap();
+    let toml_str = fs::read_to_string("src/config.toml").expect("Failed");
+    let Config {api_key, city, url, phrases} = toml::from_str(&toml_str).expect("Failed");
+    let url_rep = url
+        .replace("{0}", &api_key)
+        .replace("{1}", &city);
     // 每日检验文件位置
     let dailyfile = PathBuf::from(env::var("HOME").unwrap())
         .join(".daily")
         .join(date.clone() + ".daily");
     // 日记位置
     let diary_path = PathBuf::from(env::var("DNDIARY").unwrap()).join("diary");
-    let weather = get_weather(&url).await.unwrap();
+    let weather = get_weather(&url_rep).await.unwrap();
     let weather_code = match &weather {
         w if w.contains("晴") => "clear",
         w if w.contains("云") => "cloudy",
@@ -74,7 +66,7 @@ async fn generate_makie() {
     println!("日期检验文件位置: {}", dailyfile.display());
     println!("存在: {}", dailyfile.exists());
     println!("日记位置: {}", diary_path.display());
-    println!("phrase: {}", get_random_phrase_of_weather(phrases, "morning", "clear"));
+    println!("phrase: {}", get_random_phrase_of_weather(&phrases, "morning", "clear"));
 
     println!("================== 下面是输出喵 ==================");
     println!(
@@ -108,17 +100,17 @@ async fn generate_makie() {
     println!(
         "{}",
         get_random_phrase_of_weather(
-            phrases,
+            &phrases,
             &time,
             weather_code
         )
     );
     if rand::random() {
         // 周期问候
-        println!("{}", get_random_phrase(phrases, "weekdays"));
+        println!("{}", get_random_phrase(&phrases, "weekdays"));
     } else {
         // 随机问候
-        println!("{}", get_random_phrase(phrases, "roasts"));
+        println!("{}", get_random_phrase(&phrases, "roasts"));
     }
 }
 
@@ -146,21 +138,12 @@ async fn get_weather(url: &str) -> Result<String, Box<dyn std::error::Error>> {
 ///
 /// 返回:
 /// - `String`: 随机语句
-fn get_random_phrase(phrases: &Value, key: &str) -> String {
+fn get_random_phrase(phrases: &HashMap<String, Vec<String>>, key: &str) -> String {
     let arr = 
         phrases
-            .get(key)
-            .unwrap()
-            .as_array()
-            .unwrap();
+            .get(key).expect("Failed");
     String::from(
-        arr
-            .get(random_range(..arr.len()))
-            .unwrap()
-            .as_str()
-            .unwrap()
-        
-    )
+        &arr[random_range(..arr.len())])
 }
 
 /// 解析天气&时段的特定版本
@@ -172,7 +155,7 @@ fn get_random_phrase(phrases: &Value, key: &str) -> String {
 ///
 /// 返回:
 /// - `String`: 随机语句
-fn get_random_phrase_of_weather(phrases: &Value, time: &str, weather: &str) -> String {
+fn get_random_phrase_of_weather(phrases: &HashMap<String, Vec<String>>, time: &str, weather: &str) -> String {
     let key = time.to_owned() + "_" + weather;
     get_random_phrase(phrases, &key)
 }
