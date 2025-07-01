@@ -3,6 +3,21 @@ use std::process::{Command, Output};
 
 use crate::{config::*, datetime::*, display::*, error::*, file_utils::*, phrases::*, weather::*};
 
+pub async fn handle_main_display(
+    app_paths: &AppPaths,
+    now: &Now,
+    config: &Config,
+    args: &[String],
+) -> Result<String, AppError> {
+    if args.len() == 1 {
+        // 无命令行参数时
+        handle_greeting(app_paths, now, config).await
+    } else {
+        // 有命令行参数时
+        handle_command(app_paths, args, config)
+    }
+}
+
 /// 主显示函数，包括:
 /// - 今日无记录时，显示:
 ///   * 日期
@@ -11,11 +26,12 @@ use crate::{config::*, datetime::*, display::*, error::*, file_utils::*, phrases
 /// - 今日有记录时，提示清除
 /// - 显示待办事项
 /// - 显示日记状态
-pub async fn handle_main_display(
+pub async fn handle_greeting(
     app_paths: &AppPaths,
     now: &Now,
     config: &Config,
-) -> Result<(), AppError> {
+) -> Result<String, AppError> {
+    let mut output = Vec::new();
     // 获取语句和url
     let phrases = &config.phrases;
     let url = &config
@@ -24,19 +40,19 @@ pub async fn handle_main_display(
         .replace("{1}", &config.city);
     if app_paths.daily_file.exists() {
         // 检验文件不存在时
-        display_clean(phrases)?;
+        output.push(display_clean(phrases)?);
     } else {
         // 文件存在时，获取天气
         fs::File::create(&app_paths.daily_file)?;
         let (weather, raw_weather) = get_weather(url).await?;
-        display_greeting(phrases, now, &weather, &raw_weather)?;
+        output.push(display_greeting(phrases, now, &weather, &raw_weather)?);
     }
 
     // 显示待办事项和日记状态
-    display_todos(app_paths, phrases)?;
-    display_diary(app_paths, phrases)?;
+    output.push(display_todos(app_paths, phrases)?);
+    output.push(display_diary(app_paths, phrases)?);
 
-    Ok(())
+    Ok(output.join(""))
 }
 
 /// 处理命令行参数
@@ -44,7 +60,8 @@ pub fn handle_command(
     app_paths: &AppPaths,
     args: &[String],
     config: &Config,
-) -> Result<(), AppError> {
+) -> Result<String, AppError> {
+    let mut output = Vec::new();
     let phrases = &config.phrases;
     // 有命令行参数时
     if args[1] == "clean" {
@@ -57,12 +74,12 @@ pub fn handle_command(
             .arg(format!("rm {}", app_paths.daily_file.display()))
             .output()?;
         match status {
-            s if s.success() => println!("{}", get_random_phrase(phrases, "cleaned")?),
-            _ => println!("{}", get_random_phrase(phrases, "nothing_to_clean")?),
+            s if s.success() => output.push(get_random_phrase(phrases, "cleaned")?),
+            _ => output.push(get_random_phrase(phrases, "nothing_to_clean")?),
         }
     } else {
         // ...なに？
-        println!("{}", get_random_phrase(phrases, "nani")?);
+        output.push(get_random_phrase(phrases, "nani")?);
     }
-    Ok(())
+    Ok(output.join("\n"))
 }

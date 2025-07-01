@@ -1,7 +1,7 @@
 use serde_json::Value as JsonValue;
 use std::fmt::{Display, Formatter};
 
-use crate::{datetime::*, error::*};
+use crate::error::*;
 
 pub enum Weather {
     Clear,
@@ -53,23 +53,3 @@ pub async fn get_weather(url: &str) -> Result<(Weather, String), AppError> {
     ))
 }
 
-/// 显示天气信息与emoji
-pub fn display_weather(weather: &Weather, raw_weather: &str, now: &Now) {
-    println!(
-        "今日天气: {}{}",
-        raw_weather,
-        match weather {
-            Weather::Clear => {
-                match get_time_section(now) {
-                    TimeSection::Night => "🌙",
-                    _ => "☀️",
-                }
-            }
-            Weather::Cloudy => "⛅",
-            Weather::Overcast => "☁️",
-            Weather::Rainy => "🌧",
-            Weather::Snowy => "🌨",
-            _ => "",
-        }
-    );
-}
