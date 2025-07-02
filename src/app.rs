@@ -12,14 +12,15 @@ impl App {
     pub fn new(output: &String) -> Self {
         App {
             output: output.to_owned(),
-            window_height: output.lines().count() as u16 + 2,
+           window_height: output.lines().count() as u16 + 2,
         }
     }
 }
 
 impl Widget for &App {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        for _ in 0..self.window_height-2 {
+        // println!("{}", self.window_height);
+        for _ in 0..self.window_height {
             println!();
         }
 
