@@ -1,20 +1,20 @@
 use std::fs;
 use std::process::{Command, Output};
 
-use crate::{config::*, datetime::*, display::*, error::*, file_utils::*, phrases::*, weather::*};
+use crate::{config::*, datetime::*, display::*, error::*, file_utils::*, phrases::*, weather::*, cli::*};
 
 pub async fn handle_main_display(
     app_paths: &AppPaths,
     now: &Now,
     config: &Config,
-    args: &[String],
+    args: &Cli,
 ) -> Result<String, AppError> {
-    if args.len() == 1 {
-        // 无命令行参数时
-        handle_greeting(app_paths, now, config).await
-    } else {
+    if args.command.is_some() {
         // 有命令行参数时
         handle_command(app_paths, args, config)
+    } else {
+        // 无命令行参数时
+        handle_greeting(app_paths, now, config).await
     }
 }
 
@@ -58,13 +58,13 @@ pub async fn handle_greeting(
 /// 处理命令行参数
 pub fn handle_command(
     app_paths: &AppPaths,
-    args: &[String],
+    args: &Cli,
     config: &Config,
 ) -> Result<String, AppError> {
     let mut output = Vec::new();
     let phrases = &config.phrases;
     // 有命令行参数时
-    if args[1] == "clean" {
+    if let Some(CliCommand::Clean) = &args.command {
         let Output {
             status,
             stdout: _,
