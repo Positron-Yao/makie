@@ -34,7 +34,7 @@ async fn main() -> Result<(), AppError> {
     let mut terminal = Terminal::new(CrosstermBackend::new(io::stdout()))?;
     terminal.draw(|frame| frame.render_widget(&app, frame.area()))?;
     ratatui::restore();
-    println!();
     disable_raw_mode()?;
+    println!();
     Ok(())
 }
