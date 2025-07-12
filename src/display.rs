@@ -32,6 +32,7 @@ pub fn display_greeting(
 /// 解析todo.md文件
 pub fn display_todos(app_paths: &AppPaths, phrases: &Phrases) -> Result<String, AppError> {
     let mut output = Vec::new();
+    // output.push(String::from("\n"));
     // byd不用glow做了架绷
     // 还是几把得自己弄
     let todo_content = fs::read_to_string(&app_paths.todo_path)?;
@@ -53,9 +54,9 @@ pub fn display_todos(app_paths: &AppPaths, phrases: &Phrases) -> Result<String, 
 /// 检验日记文件是否存在，并输出提示
 pub fn display_diary(app_paths: &AppPaths, phrases: &Phrases) -> Result<String, AppError> {
     if !app_paths.diary_path.exists() {
-        Ok(format!("{}\n", get_random_phrase(phrases, "dn")?))
+        Ok(format!("\n{}\n", get_random_phrase(phrases, "dn")?))
     } else {
-        Ok(String::from("\n"))
+        Ok(String::new())
     }
 }
 

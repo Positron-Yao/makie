@@ -46,6 +46,7 @@ pub async fn handle_greeting(
         fs::File::create(&app_paths.daily_file)?;
         let (weather, raw_weather) = get_weather(url).await?;
         output.push(display_greeting(phrases, now, &weather, &raw_weather)?);
+        output.push(String::from("\n"));
     }
 
     // 显示待办事项和日记状态
